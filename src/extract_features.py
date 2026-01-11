@@ -1,5 +1,3 @@
-# src/extract_features.py
-
 import os
 import random
 import cv2
@@ -10,10 +8,6 @@ ORB_NFEATURES = 1000
 
 
 def load_images(dataset_dir):
-    """
-    Recursively load all images from the dataset directory.
-    Images are loaded in grayscale.
-    """
     images = []
     image_paths = []
 
@@ -33,9 +27,6 @@ def load_images(dataset_dir):
 
 
 def extract_orb_features(images, nfeatures=ORB_NFEATURES):
-    """
-    Extract ORB keypoints and descriptors for a list of images.
-    """
     orb = cv2.ORB_create(nfeatures=nfeatures)
 
     keypoints_list = []

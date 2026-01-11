@@ -1,5 +1,3 @@
-# src/match_query.py
-
 import os
 import cv2
 import argparse
