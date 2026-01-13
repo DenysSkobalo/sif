@@ -1,35 +1,59 @@
 import cv2
 import numpy as np
-import logging
+from utils.logger import logger
 
-from logger import logger   # ← КРИТИЧНО
+RANSAC_THRESH = 5.0
+MIN_MATCHES = 10
+MIN_HULL_POINTS = 3
 
-RANSAC_REPROJ_THRESHOLD = 5.0
-MIN_MATCHES = 8
 
-
-def ransac_filter(kp_q, kp_d, matches):
+def ransac_filter(kp_q, kp_d, matches, query_shape):
     if len(matches) < MIN_MATCHES:
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f"Skipping RANSAC: only {len(matches)} matches")
-        return 0, []
+        logger.debug("Not enough matches for RANSAC")
+        return 0, [], 0.0
 
     pts_q = np.float32([kp_q[m.queryIdx].pt for m in matches])
     pts_d = np.float32([kp_d[m.trainIdx].pt for m in matches])
 
     H, mask = cv2.findHomography(
-        pts_q,
-        pts_d,
-        cv2.RANSAC,
-        RANSAC_REPROJ_THRESHOLD
+        pts_q, pts_d, cv2.RANSAC, RANSAC_THRESH
     )
 
     if mask is None:
-        logger.debug("RANSAC failed: no inlier mask returned")
-        return 0, []
+        logger.debug("RANSAC failed")
+        return 0, [], 0.0
 
-    inlier_matches = [
-        m for m, inlier in zip(matches, mask.ravel()) if inlier
-    ]
+    mask = mask.ravel().astype(bool)
+    inlier_matches = [m for m, v in zip(matches, mask) if v]
+    inliers = len(inlier_matches)
 
-    return len(inlier_matches), inlier_matches
+    if inliers < MIN_HULL_POINTS:
+        logger.debug(f"Too few inliers for coverage: {inliers}")
+        return inliers, inlier_matches, 0.0
+
+    pts = pts_q[mask]
+    hull = cv2.convexHull(pts)
+    area = cv2.contourArea(hull)
+
+    q_area = query_shape[0] * query_shape[1]
+    coverage = area / q_area if q_area > 0 else 0.0
+
+    return inliers, inlier_matches, coverage
+
+def shape_compactness(kp_d, inlier_matches):
+    if len(inlier_matches) < 5:
+        return 0.0
+
+    pts = np.float32(
+        [kp_d[m.trainIdx].pt for m in inlier_matches]
+    )
+
+    hull = cv2.convexHull(pts)
+    area = cv2.contourArea(hull)
+    perimeter = cv2.arcLength(hull, True)
+
+    if perimeter == 0:
+        return 0.0
+
+    compactness = 4 * np.pi * area / (perimeter ** 2)
+    return min(compactness, 1.0)

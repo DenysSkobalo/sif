@@ -1,24 +1,21 @@
 import os
 import cv2
-from logger import logger
+from utils.logger import logger
 
+def load_dataset(root):
+    images, paths = [], []
 
-def load_dataset(root_dir):
-    dataset = []
+    logger.info(f"Loading dataset from: {root}")
 
-    logger.info(f"Loading dataset from: {root_dir}")
-
-    for root, _, files in os.walk(root_dir):
-        for file in files:
-            if file.lower().endswith((".jpg", ".jpeg", ".png")):
-                path = os.path.join(root, file)
-                img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-
+    for r, _, files in os.walk(root):
+        for f in files:
+            if f.lower().endswith((".jpg", ".png", ".jpeg")):
+                p = os.path.join(r, f)
+                img = cv2.imread(p, cv2.IMREAD_GRAYSCALE)
                 if img is None:
-                    logger.warning(f"Failed to load image: {path}")
                     continue
+                images.append(img)
+                paths.append(p)
 
-                dataset.append((img, path))
-
-    logger.info(f"Loaded {len(dataset)} images from dataset")
-    return dataset
+    logger.info(f"Loaded {len(images)} images from dataset")
+    return images, paths
