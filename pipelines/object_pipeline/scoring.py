@@ -2,6 +2,8 @@ import numpy as np
 import math
 
 
+# Measure directional consistency of matched keypoints.
+# Lower angular dispersion implies better spatial alignment.
 def spatial_consistency(kp_q, kp_d, matches):
     if len(matches) < 3:
         return 0.0
@@ -17,6 +19,8 @@ def spatial_consistency(kp_q, kp_d, matches):
     return max(0.0, 1.0 - std)
 
 
+# Fuse multiple normalized cues into a single similarity score.
+# Weights reflect empirical importance of each component.
 def compute_final_score(inliers, coverage, color_score, spatial,
                         w_inliers=0.4,
                         w_coverage=0.3,
@@ -25,6 +29,7 @@ def compute_final_score(inliers, coverage, color_score, spatial,
                         shape=0.0,
                         w_shape=0.15):
 
+    # Normalize raw measures to comparable ranges
     inliers_n = min(inliers / 50.0, 1.0)
     color_n = (color_score + 1.0) / 2.0
 
@@ -36,6 +41,9 @@ def compute_final_score(inliers, coverage, color_score, spatial,
         w_shape * shape
     )
 
+
+# Optional semantic bonus based on class labels.
+# Not used in the main pipeline.
 def class_bonus(query_label, db_label, bonus=0.25):
     if query_label is None or db_label is None:
         return 0.0

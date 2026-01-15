@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 
 
 def visualize_edges(query_edges, result_edges):
@@ -47,5 +48,27 @@ def show_matches(query, db, kp_q, kp_d, matches):
     )
 
     cv2.imshow("Result", vis)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+def show_logo_result(query_gray, db_gray, score):
+    h = 600
+
+    def resize(img):
+        scale = h / img.shape[0]
+        return cv2.resize(img, None, fx=scale, fy=scale)
+
+    q = resize(query_gray)
+    d = resize(db_gray)
+
+    if q.ndim == 2:
+        q = cv2.cvtColor(q, cv2.COLOR_GRAY2BGR)
+    if d.ndim == 2:
+        d = cv2.cvtColor(d, cv2.COLOR_GRAY2BGR)
+
+    vis = np.hstack([q, d])
+
+    cv2.imshow(f"Logo match (score={score:.3f})", vis)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
